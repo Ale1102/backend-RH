@@ -1,5 +1,7 @@
+// Indica que esta clase pertenece al paquete 'com.udb.rrhh.config'
 package com.udb.rrhh.config;
 
+// Importa las clases necesarias para la configuración de seguridad
 import com.udb.rrhh.security.CustomUserDetailsService;
 import com.udb.rrhh.security.JwtAuthenticationEntryPoint;
 import com.udb.rrhh.security.JwtAuthenticationFilter;
@@ -23,27 +25,35 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 
+// Marca esta clase como una configuración de Spring
 @Configuration
+// Habilita la seguridad web de Spring Security
 @EnableWebSecurity
+// Permite el uso de anotaciones como @PreAuthorize para seguridad a nivel de método
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
+    // Inyecta el servicio personalizado de detalles de usuario
     @Autowired
     private CustomUserDetailsService customUserDetailsService;
 
+    // Inyecta el manejador de errores de autenticación JWT
     @Autowired
     private JwtAuthenticationEntryPoint unauthorizedHandler;
 
+    // Define un Bean para el filtro de autenticación JWT
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
         return new JwtAuthenticationFilter();
     }
 
+    // Define un Bean para el codificador de contraseñas (BCrypt)
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    // Configura el proveedor de autenticación con el servicio de usuarios y el codificador de contraseñas
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
@@ -52,22 +62,29 @@ public class SecurityConfig {
         return authProvider;
     }
 
+    // Define un Bean para el administrador de autenticación
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
     }
 
+    // Configura la cadena de filtros de seguridad y las reglas de autorización
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                // Habilita CORS con la configuración definida
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // Deshabilita CSRF (no es necesario para APIs REST con JWT)
                 .csrf(csrf -> csrf.disable())
+                // Configura el manejador de excepciones para errores de autenticación
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(unauthorizedHandler)
                 )
+                // Establece la política de sesión como STATELESS (sin sesión)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
+                // Define las reglas de autorización para los endpoints
                 .authorizeHttpRequests(authz -> authz
                         // === ENDPOINTS PÚBLICOS ===
                         .requestMatchers("/api/auth/**").permitAll()
@@ -111,12 +128,14 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 );
 
+        // Añade el proveedor de autenticación y el filtro JWT
         http.authenticationProvider(authenticationProvider());
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
+    // Configura CORS para permitir solicitudes desde cualquier origen
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
